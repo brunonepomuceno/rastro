@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { IridescentFabricShader } from './shaders.js';
+import { IridescentFabricShader, LiquidRippleShader, ThermalVisionShader, AsciiShader } from './shaders.js';
 import { MeshBuilder } from './meshBuilder.js';
 
 // MediaPipe Hand Landmark Connections
@@ -68,6 +68,23 @@ export class AppRenderer {
 
     this.handleResize();
     window.addEventListener('resize', () => this.handleResize());
+  }
+
+  setEffectType(type) {
+    if (type === 'liquidRipple') {
+      this.material.vertexShader = LiquidRippleShader.vertexShader;
+      this.material.fragmentShader = LiquidRippleShader.fragmentShader;
+    } else if (type === 'thermalVision') {
+      this.material.vertexShader = ThermalVisionShader.vertexShader;
+      this.material.fragmentShader = ThermalVisionShader.fragmentShader;
+    } else if (type === 'ascii') {
+      this.material.vertexShader = AsciiShader.vertexShader;
+      this.material.fragmentShader = AsciiShader.fragmentShader;
+    } else {
+      this.material.vertexShader = IridescentFabricShader.vertexShader;
+      this.material.fragmentShader = IridescentFabricShader.fragmentShader;
+    }
+    this.material.needsUpdate = true;
   }
 
   handleResize() {

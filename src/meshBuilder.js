@@ -51,9 +51,8 @@ export class MeshBuilder {
         const x = THREE.MathUtils.lerp(ptLeft.x, ptRight.x, u);
         const y = THREE.MathUtils.lerp(ptLeft.y, ptRight.y, u);
 
-        // Add parabolic catenary sag depth in the center of fabric
-        const sag = Math.sin(u * Math.PI) * Math.sin(v * Math.PI) * 0.15;
-        const z = THREE.MathUtils.lerp(ptLeft.z, ptRight.z, u) + sag;
+        // 100% Flat geometric projection
+        const z = THREE.MathUtils.lerp(ptLeft.z, ptRight.z, u);
 
         this.targetPositions[idx * 3] = x;
         this.targetPositions[idx * 3 + 1] = y;
@@ -89,8 +88,9 @@ export class MeshBuilder {
 
   // Extract key contour points around hand perimeter (wrist, fingertips, knuckles)
   extractHandContourPoints(landmarks, aspect, visibleBounds) {
-    // MediaPipe landmark indices: 0=wrist, 4=thumb, 8=index, 12=middle, 16=ring, 20=pinky
-    const indices = [0, 4, 8, 12, 16, 20];
+    // MediaPipe landmark indices: 4=thumb tip, 8=index tip
+    // Using only 2 points creates a clean rectangle spanning the thumb and index fingers
+    const indices = [4, 8];
     return indices.map(idx => this.convertPoint(landmarks[idx], aspect, visibleBounds));
   }
 

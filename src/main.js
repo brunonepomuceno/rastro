@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnPause = document.getElementById('btnPause');
   const btnPlay = document.getElementById('btnPlay');
   const btnReset = document.getElementById('btnReset');
+  const btnMotionVeil = document.getElementById('btnMotionVeil');
+  const btnLiquidRipple = document.getElementById('btnLiquidRipple');
+  const btnThermalVision = document.getElementById('btnThermalVision');
+  const btnAscii = document.getElementById('btnAscii');
 
   const skeletonColorInput = document.getElementById('skeletonColor');
   const skeletonColorHex = document.getElementById('skeletonColorHex');
@@ -134,6 +138,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     tracker.setPaused(false);
     btnPlay.classList.add('active');
     btnPause.classList.remove('active');
+  });
+
+  // Effect Shader Switcher
+  const effectBtns = [btnMotionVeil, btnLiquidRipple, btnThermalVision, btnAscii];
+  
+  function setActiveEffectBtn(activeBtn) {
+    effectBtns.forEach(btn => btn.classList.remove('active'));
+    activeBtn.classList.add('active');
+  }
+
+  btnMotionVeil.addEventListener('click', () => {
+    appRenderer.setEffectType('motionVeil');
+    setActiveEffectBtn(btnMotionVeil);
+  });
+
+  btnLiquidRipple.addEventListener('click', () => {
+    appRenderer.setEffectType('liquidRipple');
+    setActiveEffectBtn(btnLiquidRipple);
+  });
+
+  btnThermalVision.addEventListener('click', () => {
+    appRenderer.setEffectType('thermalVision');
+    setActiveEffectBtn(btnThermalVision);
+  });
+
+  btnAscii.addEventListener('click', () => {
+    appRenderer.setEffectType('ascii');
+    setActiveEffectBtn(btnAscii);
   });
 
   // Color Input
