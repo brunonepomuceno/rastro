@@ -1,58 +1,84 @@
-# 🌈 Motion Veil (Efeitos Refrativos & Shaders)
+# rastro
 
-Uma aplicação web interativa em 3D que rastreia os movimentos das mãos do usuário através da câmera e cria múltiplos efeitos visuais e holográficos manipuláveis em tempo real.
+Rastro é uma aplicação web interativa para processamento visual e renderização de efeitos refrativos em tempo real. O sistema utiliza a câmera do dispositivo para rastrear os movimentos das mãos e aplicar shaders customizados em malhas 3D e filtros de pós-processamento.
 
----
+## Funcionalidades
 
-## ⚡ Recursos Principais
+- **Rastreamento de Mãos (MediaPipe Hands):** Mapeamento de 21 pontos de articulação por mão com baixa latência.
+- **Efeitos de Shaders (WebGL via Three.js):**
+  - **Motion Veil:** Malha 3D conectada entre os dedos com reflexão, refração óptica e dispersão cromática (RGB shift).
+  - **Liquid Ripple:** Distorções ondulatórias de fluido sobre o feed de vídeo.
+  - **Thermal Vision:** Mapeamento de luminância para paleta de visão térmica.
+  - **TouchDesigner Portal:** Efeito portal com deformação radial e franjas de cor iridescentes.
+  - **ASCII Art:** Renderização procedimental em matriz de caracteres.
+  - **Glitch Effect:** Aberração cromática com linhas de varredura e ruído.
+  - **Effect Circle:** Sistema de instanciamento em GPU para anéis de efeito entre os pontos das mãos.
+- **Controles em Tempo Real:**
+  - Painel lateral para ajuste de parâmetros (opacidade, dispersão RGB, nível de iridescência, espessura do esqueleto).
+  - Seleção de presets visuais (Brik Original, Liquid Glass, Neon Prism, Rainbow Silk).
+  - Exportação de capturas de tela (PNG) em alta resolução.
+  - Alternância de exibição em tela cheia (Fullscreen).
 
-* **Rastreamento Gestual 3D (MediaPipe Hands):** Rastreia 21 pontos anatômicos das mãos em tempo real a 60 FPS diretamente no navegador.
-* **Shaders e Efeitos GLSL (Three.js WebGL):**
-  * **Iridescent Fabric:** Tecido refrativo, com refração óptica, dispersão cromática e gradiente Fresnel.
-  * **Liquid Ripple:** Distorções aquáticas simulando ondas líquidas.
-  * **Thermal Vision:** Câmera térmica com mapeamento de luminosidade para cores de calor.
-  * **ASCII Art:** Filtro clássico verde em estilo *Matrix* gerado procedimentalmente.
-  * **Glitch Effect:** Efeito *cyberpunk* com aberração cromática severa, *scanlines* CRT e ruído estático de canal morto.
-  * **Effect Circle:** Sistema avançado de *GPU Instancing* que renderiza múltiplos painéis de efeito espiralados flutuando entre as duas mãos.
-* **Interface de Estúdio Completa:**
-  * Modo **Fullscreen (100% Tela Cheia)**.
-  * Painel de controles dinâmicos.
-  * Sistema de Snapshot (Exportação de quadros da câmera para PNG de alta resolução).
-  * Modo **Simulador Demo** interno integrado para simular mãos virtualmente.
+## Requisitos
 
----
+- Node.js (versão 18 ou superior)
+- Navegador web moderno com suporte a WebGL e acesso à webcam.
 
-## 🚀 Como Executar Localmente
+## Instalação e Execução
 
-O projeto foi rigorosamente **sanitizado e otimizado** para produção utilizando a ferramenta de *build* **Vite**. Não sofre com dependências NPM pesadas ou incompatibilidades de módulos estáticos, mantendo um perfil leve e limpo.
+1. Clone o repositório e acesse o diretório do projeto:
+   ```bash
+   git clone https://github.com/brunonepomuceno/rastro.git
+   cd rastro
+   ```
 
-```bash
-# 1. Instale as dependências (Vite e Three.js)
-npm install
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
 
-# 2. Inicie o servidor local de desenvolvimento
-npm run dev
+3. Inicie o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
+
+4. Acesse o endereço exibido no terminal (geralmente `http://localhost:5173`).
+
+## Como Usar
+
+1. Ao abrir a aplicação, autorize o acesso à câmera.
+2. Posicione uma ou ambas as mãos em frente à câmera.
+3. Utilize o botão **Painel** no canto superior direito para abrir as configurações.
+4. Alterne entre os shaders de efeito no menu **Effect Shader**.
+5. Ajuste a cor e a espessura do esqueleto de rastreamento conforme desejado.
+6. Clique no botão **Exportar** para capturar e baixar a imagem renderizada.
+
+## Estrutura do Projeto
+
+```
+rastro/
+├── index.html          # Estrutura DOM da interface
+├── package.json        # Dependências e scripts de build
+├── vite.config.js      # Configuração do Vite
+└── src/
+    ├── main.js         # Eventos de UI e inicialização da aplicação
+    ├── handTracker.js  # Integração com MediaPipe Hands e simulação demo
+    ├── renderer.js     # Cena Three.js, malha 3D e renderização do esqueleto
+    ├── meshBuilder.js  # Construção da geometria customizada da malha
+    ├── shaders.js      # GLSL Vertex e Fragment Shaders
+    └── style.css       # Estilo visual da interface
 ```
 
-Acesse o IP ou \`localhost\` exibido no terminal.
+## Compilação para Produção
 
----
+Para gerar os arquivos estáticos otimizados para produção:
 
-## 🌍 Como Fazer Deploy em Produção (Servidores Online)
+```bash
+npm run build
+```
 
-A arquitetura do projeto foi reformulada para evitar problemas clássicos de importação dinâmica em produção. Você pode gerar a versão de produção e hospedá-la instantaneamente em serviços estáticos como **GitHub Pages**, **Vercel**, **Netlify** ou **AWS S3**.
+Os arquivos compilados serão gerados na pasta `dist/` e podem ser hospedados em qualquer servidor web estático.
 
-1. **Gere a Build de Produção:**
-   ```bash
-   npm run build
-   ```
-   *Isto criará uma pasta chamada \`/dist\` na raiz do seu projeto contendo o HTML enxuto, CSS minificado e JS empacotado e ofuscado.*
+## Licença
 
-2. **Hospede a pasta \`/dist\`:**
-   Faça o upload de todo o conteúdo da pasta \`/dist\` para a raiz do seu provedor de hospedagem web ou *bucket*. O sistema de build já está configurado (\`vite.config.js\`) com \`base: './'\`, o que assegura o funcionamento impecável dos arquivos estáticos em qualquer caminho, domínio ou sub-diretório de URL (ex: \`meudominio.com/app-camera/\`).
-
----
-
-## 📄 Licença
-
-Todos os direitos reservados.
+MIT
