@@ -5,6 +5,13 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three']
+        }
+      }
+    }
   },
   server: {
     host: true // Expõe o servidor para a rede local (celular)
