@@ -88,9 +88,9 @@ export class MeshBuilder {
 
   // Extract key contour points around hand perimeter (wrist, fingertips, knuckles)
   extractHandContourPoints(landmarks, aspect, visibleBounds) {
-    // MediaPipe landmark indices: 4=thumb tip, 8=index tip
-    // Using only 2 points creates a clean rectangle spanning the thumb and index fingers
-    const indices = [4, 8];
+    // MediaPipe landmark indices: 8=index tip (top corner), 4=thumb tip (bottom corner)
+    // This creates a quad pinned between Index finger and Thumb of both hands
+    const indices = [8, 4];
     return indices.map(idx => this.convertPoint(landmarks[idx], aspect, visibleBounds));
   }
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { IridescentFabricShader, LiquidRippleShader, ThermalVisionShader, AsciiShader } from './shaders.js';
+import { IridescentFabricShader, LiquidRippleShader, ThermalVisionShader, AsciiShader, GlitchShader, CircleStackShader, TouchDesignerPortalShader } from './shaders.js';
 import { MeshBuilder } from './meshBuilder.js';
 
 // MediaPipe Hand Landmark Connections
@@ -36,17 +36,9 @@ export class AppRenderer {
     this.videoTexture = new THREE.VideoTexture(this.video);
     this.videoTexture.minFilter = THREE.LinearFilter;
     this.videoTexture.magFilter = THREE.LinearFilter;
-    this.videoTexture.format = THREE.RGBAFormat;
+    this.videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-    // Video Background Plane
-    const bgGeo = new THREE.PlaneGeometry(1, 1);
-    const bgMat = new THREE.MeshBasicMaterial({ map: this.videoTexture });
-    this.bgMesh = new THREE.Mesh(bgGeo, bgMat);
-    this.bgMesh.position.z = -0.8;
-    this.scene.add(this.bgMesh);
-
-    // Iridescent Fabric Mesh
-    this.meshBuilder = new MeshBuilder(24, 24);
+    // Custom Shader Material
     this.material = new THREE.ShaderMaterial({
       vertexShader: IridescentFabricShader.vertexShader,
       fragmentShader: IridescentFabricShader.fragmentShader,
@@ -55,10 +47,50 @@ export class AppRenderer {
       side: THREE.DoubleSide,
       depthWrite: false
     });
+    
+    // Fabric Mesh Stack Instanced Mesh (30 cards)
+    const instanceCount = 30;
+    const stackGeo = new THREE.PlaneGeometry(0.35, 0.35);
+    this.stackMaterial = new THREE.ShaderMaterial({
+      vertexShader: CircleStackShader.vertexShader,
+      fragmentShader: CircleStackShader.fragmentShader,
+      uniforms: THREE.UniformsUtils.clone(CircleStackShader.uniforms),
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.stackMaterial.uniforms.uTexture.value = this.videoTexture;
+
+    this.instancedStack = new THREE.InstancedMesh(stackGeo, this.stackMaterial, instanceCount);
+    
+    const effectTypes = new Float32Array(instanceCount);
+    for (let i = 0; i < instanceCount; i++) {
+      effectTypes[i] = i % 6; // Assign a different effect index per card
+    }
+    stackGeo.setAttribute('aEffectType', new THREE.InstancedBufferAttribute(effectTypes, 1));
+    this.instancedStack.visible = false;
+    this.scene.add(this.instancedStack);
+
+    // Connecting Line for Circle Stack
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(1,1,1)]);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+    this.connectingLine = new THREE.Line(lineGeo, lineMat);
+    this.connectingLine.visible = false;
+    this.scene.add(this.connectingLine);
+
+    // Fabric Mesh
+    this.meshBuilder = new MeshBuilder(24, 24);
     this.material.uniforms.uTexture.value = this.videoTexture;
 
     this.fabricMesh = new THREE.Mesh(this.meshBuilder.geometry, this.material);
     this.scene.add(this.fabricMesh);
+
+    // Video Background Plane
+    const bgGeo = new THREE.PlaneGeometry(1, 1);
+    const bgMat = new THREE.MeshBasicMaterial({ map: this.videoTexture });
+    this.bgMesh = new THREE.Mesh(bgGeo, bgMat);
+    this.bgMesh.position.z = -0.8;
+    this.scene.add(this.bgMesh);
 
     // Settings
     this.skeletonColor = '#00ffaa';
@@ -71,7 +103,11 @@ export class AppRenderer {
   }
 
   setEffectType(type) {
-    if (type === 'liquidRipple') {
+    this.currentEffect = type;
+    if (type === 'touchDesignerPortal') {
+      this.material.vertexShader = TouchDesignerPortalShader.vertexShader;
+      this.material.fragmentShader = TouchDesignerPortalShader.fragmentShader;
+    } else if (type === 'liquidRipple') {
       this.material.vertexShader = LiquidRippleShader.vertexShader;
       this.material.fragmentShader = LiquidRippleShader.fragmentShader;
     } else if (type === 'thermalVision') {
@@ -80,6 +116,9 @@ export class AppRenderer {
     } else if (type === 'ascii') {
       this.material.vertexShader = AsciiShader.vertexShader;
       this.material.fragmentShader = AsciiShader.fragmentShader;
+    } else if (type === 'glitch') {
+      this.material.vertexShader = GlitchShader.vertexShader;
+      this.material.fragmentShader = GlitchShader.fragmentShader;
     } else {
       this.material.vertexShader = IridescentFabricShader.vertexShader;
       this.material.fragmentShader = IridescentFabricShader.fragmentShader;
@@ -134,16 +173,70 @@ export class AppRenderer {
 
     if (!results || !results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
       this.fabricMesh.visible = false;
+      this.instancedStack.visible = false;
+      this.connectingLine.visible = false;
       this.clearSkeletonCanvas();
       return;
     }
 
-    this.fabricMesh.visible = true;
     const hand1 = results.multiHandLandmarks[0];
     const hand2 = results.multiHandLandmarks[1] || null;
-
     const bounds = this.visibleBounds || { width: 3.5, height: 2.0 };
-    this.meshBuilder.updateMeshFromLandmarks(hand1, hand2, this.camera.aspect, bounds);
+
+    if (this.currentEffect === 'circle') {
+      this.fabricMesh.visible = false;
+
+      if (hand1 && hand2) {
+        this.instancedStack.visible = true;
+        this.connectingLine.visible = true;
+
+        const p1 = this.meshBuilder.convertPoint(hand1[8], this.camera.aspect, bounds);
+        const p2 = this.meshBuilder.convertPoint(hand2[8], this.camera.aspect, bounds);
+        
+        const v1 = new THREE.Vector3(p1.x, p1.y, p1.z);
+        const v2 = new THREE.Vector3(p2.x, p2.y, p2.z);
+
+        this.connectingLine.geometry.setFromPoints([v1, v2]);
+
+        const dummy = new THREE.Object3D();
+        const count = this.instancedStack.count;
+        for (let i = 0; i < count; i++) {
+          const t = i / (count - 1);
+          const pos = new THREE.Vector3().lerpVectors(v1, v2, t);
+          
+          // Spiral chaos formula
+          const angle = t * Math.PI * 6.0 + this.clock.getElapsedTime() * 3.0;
+          const radius = Math.sin(t * Math.PI) * 0.4;
+          
+          const dir = new THREE.Vector3().subVectors(v2, v1).normalize();
+          const up = new THREE.Vector3(0, 1, 0);
+          let right = new THREE.Vector3().crossVectors(dir, up).normalize();
+          if (right.lengthSq() < 0.001) right.set(1, 0, 0);
+          const realUp = new THREE.Vector3().crossVectors(right, dir).normalize();
+
+          pos.add(right.clone().multiplyScalar(Math.cos(angle) * radius));
+          pos.add(realUp.clone().multiplyScalar(Math.sin(angle) * radius));
+
+          dummy.position.copy(pos);
+          dummy.lookAt(this.camera.position);
+          dummy.rotateZ(Math.sin(i * 12.3) * 0.5); // Random tilt
+          
+          dummy.updateMatrix();
+          this.instancedStack.setMatrixAt(i, dummy.matrix);
+        }
+        this.instancedStack.instanceMatrix.needsUpdate = true;
+      } else {
+        this.instancedStack.visible = false;
+        this.connectingLine.visible = false;
+      }
+
+    } else {
+      this.fabricMesh.visible = true;
+      this.instancedStack.visible = false;
+      this.connectingLine.visible = false;
+      this.meshBuilder.updateMeshFromLandmarks(hand1, hand2, this.camera.aspect, bounds);
+    }
+
     this.drawSkeletonOverlay(results.multiHandLandmarks);
   }
 
@@ -195,6 +288,9 @@ export class AppRenderer {
     if (this.isPlaying) {
       const elapsedTime = this.clock.getElapsedTime();
       this.material.uniforms.uTime.value = elapsedTime;
+      if (this.stackMaterial) {
+        this.stackMaterial.uniforms.uTime.value = elapsedTime;
+      }
 
       if (this.video.readyState >= this.video.HAVE_CURRENT_DATA) {
         this.videoTexture.needsUpdate = true;

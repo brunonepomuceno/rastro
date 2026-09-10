@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnMotionVeil = document.getElementById('btnMotionVeil');
   const btnLiquidRipple = document.getElementById('btnLiquidRipple');
   const btnThermalVision = document.getElementById('btnThermalVision');
+  const btnTouchDesigner = document.getElementById('btnTouchDesigner');
   const btnAscii = document.getElementById('btnAscii');
+  const btnGlitch = document.getElementById('btnGlitch');
+  const btnCircle = document.getElementById('btnCircle');
 
   const skeletonColorInput = document.getElementById('skeletonColor');
   const skeletonColorHex = document.getElementById('skeletonColorHex');
@@ -141,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Effect Shader Switcher
-  const effectBtns = [btnMotionVeil, btnLiquidRipple, btnThermalVision, btnAscii];
+  const effectBtns = [btnMotionVeil, btnLiquidRipple, btnThermalVision, btnTouchDesigner, btnAscii, btnGlitch, btnCircle];
   
   function setActiveEffectBtn(activeBtn) {
     effectBtns.forEach(btn => btn.classList.remove('active'));
@@ -163,9 +166,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     setActiveEffectBtn(btnThermalVision);
   });
 
+  btnTouchDesigner.addEventListener('click', () => {
+    appRenderer.setEffectType('touchDesignerPortal');
+    setActiveEffectBtn(btnTouchDesigner);
+  });
+
   btnAscii.addEventListener('click', () => {
     appRenderer.setEffectType('ascii');
     setActiveEffectBtn(btnAscii);
+  });
+
+  btnGlitch.addEventListener('click', () => {
+    appRenderer.setEffectType('glitch');
+    setActiveEffectBtn(btnGlitch);
+  });
+
+  btnCircle.addEventListener('click', () => {
+    appRenderer.setEffectType('circle');
+    setActiveEffectBtn(btnCircle);
   });
 
   // Color Input

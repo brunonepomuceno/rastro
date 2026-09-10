@@ -391,3 +391,291 @@ export const AsciiShader = {
     }
   `
 };
+
+export const GlitchShader = {
+  uniforms: {
+    uTexture: { value: null },
+    uTime: { value: 0.0 },
+    uOpacity: { value: 1.0 },
+    uResolution: { value: [1.0, 1.0] },
+    uRefractionStrength: { value: 0.0 },
+    uWaveRipple: { value: 0.0 },
+    uIridescence: { value: 0.0 },
+    uChromaticDispersion: { value: 0.0 }
+  },
+
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    varying vec2 vScreenUv;
+
+    void main() {
+      vUv = uv;
+      vec4 mvPosition = viewMatrix * modelMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+      vScreenUv = (gl_Position.xy / gl_Position.w) * 0.5 + 0.5;
+    }
+  `,
+
+  fragmentShader: /* glsl */ `
+    uniform sampler2D uTexture;
+    uniform float uTime;
+    uniform float uOpacity;
+    
+    varying vec2 vUv;
+    varying vec2 vScreenUv;
+
+    // Pseudo-random generator
+    float random(vec2 st) {
+      return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    }
+
+    void main() {
+      vec2 uv = vScreenUv;
+      
+      // Neuromancer Vibe: "The sky above the port was the color of television, tuned to a dead channel."
+      
+      // 1. Cyberdeck blocky glitch & tearing
+      float intensity = smoothstep(0.4, 0.9, sin(uTime * 2.0)) * 0.15;
+      float block = random(floor(uv * vec2(8.0, 40.0)) + uTime) * intensity;
+      float tear = step(0.95, random(vec2(uTime, floor(uv.y * 15.0))));
+      uv.x += (block + tear * 0.05) * step(0.5, random(vec2(uTime)));
+
+      // 2. Harsh Chromatic Aberration (Cyan & Magenta split)
+      float r = texture2D(uTexture, uv + vec2(0.015, 0.0)).r; 
+      float g = texture2D(uTexture, uv).g;
+      float b = texture2D(uTexture, uv - vec2(0.015, 0.0)).b;
+      
+      // 3. Dead Channel Monochrome base
+      float lum = dot(vec3(r, g, b), vec3(0.299, 0.587, 0.114));
+      vec3 deadChannel = vec3(lum);
+      
+      // Enhance the chromatic edges for a neon feel
+      vec3 neonEdges = vec3(r, g * 0.5, b); 
+      
+      // 4. Cyberspace Grid Overlay
+      // We use the fabric's 3D UV (vUv) so the grid sticks and warps with the mesh
+      vec2 gridUv = fract(vUv * 15.0);
+      float gridLines = step(0.9, gridUv.x) + step(0.9, gridUv.y);
+      vec3 gridColor = vec3(0.0, 1.0, 0.8) * gridLines; // Neon Cyan
+      
+      // 5. TV Static Snow
+      float staticNoise = random(uv + fract(uTime)) * 0.25;
+      
+      // Combine it all
+      vec3 finalColor = mix(deadChannel, neonEdges, 0.5) + staticNoise + (gridColor * 0.8);
+      
+      // 6. Hard CRT Scanlines
+      float scanline = sin(uv.y * 1000.0) * 0.08;
+      finalColor -= scanline;
+
+      gl_FragColor = vec4(finalColor, uOpacity);
+    }
+  `
+};
+
+export const CircleStackShader = {
+  uniforms: {
+    uTexture: { value: null },
+    uTime: { value: 0.0 },
+    uOpacity: { value: 1.0 },
+    uResolution: { value: [1.0, 1.0] },
+    uRefractionStrength: { value: 0.0 },
+    uWaveRipple: { value: 0.0 },
+    uIridescence: { value: 0.0 },
+    uChromaticDispersion: { value: 0.0 },
+    uPcbTexture: { value: null }
+  },
+
+  vertexShader: /* glsl */ `
+    attribute float aEffectType; // Instanced attribute
+    varying vec2 vUv;
+    varying vec2 vScreenUv;
+    varying float vEffectType;
+    
+    void main() {
+      vEffectType = aEffectType;
+      vUv = uv;
+      
+      vec4 mvPosition = viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+      vScreenUv = (gl_Position.xy / gl_Position.w) * 0.5 + 0.5;
+    }
+  `,
+
+  fragmentShader: /* glsl */ `
+    uniform sampler2D uTexture;
+    uniform float uTime;
+    
+    varying vec2 vUv;
+    varying vec2 vScreenUv;
+    varying float vEffectType;
+
+    void main() {
+      vec3 color = texture2D(uTexture, vScreenUv).rgb;
+      
+      int effect = int(vEffectType + 0.5);
+      
+      if (effect == 0) {
+        // Normal Color
+      } else if (effect == 1) {
+        // Thermal
+        float lum = dot(color, vec3(0.299, 0.587, 0.114));
+        color = mix(vec3(0.0, 0.0, 0.8), vec3(1.0, 1.0, 0.0), lum);
+        color = mix(color, vec3(1.0, 0.0, 0.0), smoothstep(0.5, 1.0, lum));
+      } else if (effect == 2) {
+        // Glitch Chromatic
+        vec2 glitchUv = vScreenUv;
+        float wave = sin(vScreenUv.y * 50.0 + uTime * 10.0) * 0.02;
+        glitchUv.x += wave;
+        color = texture2D(uTexture, glitchUv).rgb;
+        color.r = texture2D(uTexture, glitchUv + vec2(0.015, 0.0)).r;
+        color.b = texture2D(uTexture, glitchUv - vec2(0.015, 0.0)).b;
+      } else if (effect == 3) {
+        // Invert
+        color = 1.0 - color;
+      } else if (effect == 4) {
+        // Matrix Green
+        float lum = dot(color, vec3(0.299, 0.587, 0.114));
+        color = vec3(0.1, lum * 1.5, 0.2);
+      } else if (effect == 5) {
+        // B&W High Contrast
+        float lum = dot(color, vec3(0.299, 0.587, 0.114));
+        color = vec3(smoothstep(0.2, 0.8, lum));
+      }
+      
+      // Thick white border to match the TouchDesigner screenshot
+      float thickness = 0.03;
+      float borderMask = step(thickness, vUv.x) * step(thickness, vUv.y) * step(vUv.x, 1.0 - thickness) * step(vUv.y, 1.0 - thickness);
+      
+      // Inner shadow/border
+      float innerBorder = step(thickness * 2.0, vUv.x) * step(thickness * 2.0, vUv.y) * step(vUv.x, 1.0 - thickness * 2.0) * step(vUv.y, 1.0 - thickness * 2.0);
+      
+      // If outside inner border, maybe black, else if outside border, white
+      if (borderMask < 0.5) {
+        color = vec3(1.0); // White frame
+      } else if (innerBorder < 0.5) {
+        color = vec3(0.0); // Black inner frame
+      }
+      
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `
+};
+
+export const TouchDesignerPortalShader = {
+  uniforms: {
+    uTexture: { value: null },
+    uTime: { value: 0.0 },
+    uOpacity: { value: 1.0 },
+    uResolution: { value: [1.0, 1.0] },
+    uRefractionStrength: { value: 0.5 },
+    uWaveRipple: { value: 0.2 },
+    uIridescence: { value: 1.0 },
+    uChromaticDispersion: { value: 0.08 }
+  },
+
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    varying vec2 vScreenUv;
+    varying vec3 vNormal;
+
+    void main() {
+      vUv = uv;
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+      vScreenUv = (gl_Position.xy / gl_Position.w) * 0.5 + 0.5;
+    }
+  `,
+
+  fragmentShader: /* glsl */ `
+    uniform sampler2D uTexture;
+    uniform float uTime;
+    uniform float uOpacity;
+    uniform float uIridescence;
+    uniform float uChromaticDispersion;
+    uniform float uRefractionStrength;
+
+    varying vec2 vUv;
+    varying vec2 vScreenUv;
+
+    // Psychedelic Spectral Rainbow Color Lookup Table (TouchDesigner style)
+    vec3 psychedelicPalette(float t) {
+      vec3 a = vec3(0.5, 0.5, 0.5);
+      vec3 b = vec3(0.5, 0.5, 0.5);
+      vec3 c = vec3(2.0, 1.0, 1.0);
+      vec3 d = vec3(0.00, 0.33, 0.67);
+      
+      vec3 color = a + b * cos(6.28318 * (c * t + d + vec3(uTime * 0.05)));
+      return color;
+    }
+
+    // Sobel edge detector for glowing high-frequency outlines
+    float detectEdges(vec2 uv, vec2 stepSize) {
+      float t0 = dot(texture2D(uTexture, uv + vec2(-stepSize.x, -stepSize.y)).rgb, vec3(0.299, 0.587, 0.114));
+      float t1 = dot(texture2D(uTexture, uv + vec2( 0.0,        -stepSize.y)).rgb, vec3(0.299, 0.587, 0.114));
+      float t2 = dot(texture2D(uTexture, uv + vec2( stepSize.x, -stepSize.y)).rgb, vec3(0.299, 0.587, 0.114));
+
+      float t3 = dot(texture2D(uTexture, uv + vec2(-stepSize.x,  0.0)).rgb, vec3(0.299, 0.587, 0.114));
+      float t5 = dot(texture2D(uTexture, uv + vec2( stepSize.x,  0.0)).rgb, vec3(0.299, 0.587, 0.114));
+
+      float t6 = dot(texture2D(uTexture, uv + vec2(-stepSize.x,  stepSize.y)).rgb, vec3(0.299, 0.587, 0.114));
+      float t7 = dot(texture2D(uTexture, uv + vec2( 0.0,         stepSize.y)).rgb, vec3(0.299, 0.587, 0.114));
+      float t8 = dot(texture2D(uTexture, uv + vec2( stepSize.x,  stepSize.y)).rgb, vec3(0.299, 0.587, 0.114));
+
+      float gx = -t0 - 2.0*t3 - t6 + t2 + 2.0*t5 + t8;
+      float gy = -t0 - 2.0*t1 - t2 + t6 + 2.0*t7 + t8;
+
+      return sqrt(gx * gx + gy * gy);
+    }
+
+    void main() {
+      vec2 uv = vScreenUv;
+
+      // Chromatic dispersion shift
+      float disp = uChromaticDispersion * 0.03;
+      float r = texture2D(uTexture, uv + vec2(disp, 0.0)).r;
+      float g = texture2D(uTexture, uv).g;
+      float b = texture2D(uTexture, uv - vec2(disp, 0.0)).b;
+
+      vec3 texColor = vec3(r, g, b);
+
+      // Compute luminance and solarized heat value
+      float lum = dot(texColor, vec3(0.299, 0.587, 0.114));
+      
+      // TouchDesigner solarization curves (sine/cosine waves over luminance)
+      float solarizedLum = sin(lum * 3.14159 * 2.5 + uTime * 0.2) * 0.5 + 0.5;
+      
+      // Pass through psychedelic rainbow palette
+      vec3 rainbowColor = psychedelicPalette(solarizedLum * 1.5 + lum * 0.5);
+      
+      // High-contrast saturation boost
+      rainbowColor = pow(rainbowColor, vec3(0.85));
+
+      // Sobel Edge Detection for neon outlines
+      vec2 stepSize = vec2(1.0 / 1280.0, 1.0 / 720.0);
+      float edges = detectEdges(uv, stepSize);
+      edges = smoothstep(0.12, 0.45, edges);
+
+      // Neon outline color (bright cyan/yellow)
+      vec3 edgeColor = mix(vec3(0.0, 1.0, 0.9), vec3(1.0, 0.9, 0.0), sin(uTime * 2.0) * 0.5 + 0.5);
+
+      // Combine base rainbow heatmap with neon edge highlights
+      vec3 finalColor = mix(rainbowColor, edgeColor, edges * 0.7);
+
+      // TouchDesigner node window frame border (outer white, inner dark)
+      float thickness = 0.015;
+      float outerBorder = step(thickness, vUv.x) * step(thickness, vUv.y) * step(vUv.x, 1.0 - thickness) * step(vUv.y, 1.0 - thickness);
+      float innerBorder = step(thickness * 1.8, vUv.x) * step(thickness * 1.8, vUv.y) * step(vUv.x, 1.0 - thickness * 1.8) * step(vUv.y, 1.0 - thickness * 1.8);
+
+      if (outerBorder < 0.5) {
+        finalColor = vec3(0.9, 0.95, 1.0); // Bright TouchDesigner node border frame
+      } else if (innerBorder < 0.5) {
+        finalColor = vec3(0.08, 0.1, 0.14); // Dark inner frame edge
+      }
+
+      gl_FragColor = vec4(finalColor, uOpacity);
+    }
+  `
+};
+

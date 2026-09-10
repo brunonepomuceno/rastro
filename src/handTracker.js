@@ -16,7 +16,7 @@ export class HandTracker {
 
   async init() {
     try {
-      const HandsClass = window.Hands || (await import('@mediapipe/hands')).Hands;
+      const HandsClass = window.Hands;
 
       this.hands = new HandsClass({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -67,7 +67,7 @@ export class HandTracker {
       this.isCameraActive = true;
       this.isPaused = false;
 
-      const CameraClass = window.Camera || (await import('@mediapipe/camera_utils')).Camera;
+      const CameraClass = window.Camera;
 
       this.camera = new CameraClass(this.video, {
         onFrame: async () => {
