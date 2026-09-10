@@ -4,7 +4,6 @@ import { HandTracker } from './handTracker.js';
 document.addEventListener('DOMContentLoaded', async () => {
   // DOM Elements
   const webcam = document.getElementById('webcam');
-  const pipVideo = document.getElementById('pipVideo');
   const threeCanvas = document.getElementById('threeCanvas');
   const skeletonCanvas = document.getElementById('skeletonCanvas');
   const statusBadge = document.getElementById('statusBadge');
@@ -14,8 +13,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Controls DOM
   const btnToggleSidebar = document.getElementById('btnToggleSidebar');
-  const btnToggleCamera = document.getElementById('btnToggleCamera');
-  const btnDemoVideo = document.getElementById('btnDemoVideo');
   const btnFullscreen = document.getElementById('btnFullscreen');
   const btnSnapshot = document.getElementById('btnSnapshot');
   const btnPause = document.getElementById('btnPause');
@@ -56,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const appRenderer = new AppRenderer(threeCanvas, skeletonCanvas, webcam);
 
   // Initialize Hand Tracker
-  const tracker = new HandTracker(webcam, pipVideo, (results) => {
+  const tracker = new HandTracker(webcam, (results) => {
     appRenderer.updateHandLandmarks(results);
     if (results && results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       gestureHint.style.opacity = '0.3';
@@ -93,27 +90,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- UI Event Handlers ---
   btnToggleSidebar.addEventListener('click', () => {
     controlsSidebar.classList.toggle('collapsed');
-  });
-
-  btnToggleCamera.addEventListener('click', async () => {
-    if (tracker.isCameraActive) {
-      tracker.stopCamera();
-      tracker.startDemoMode();
-      updateStatus('Modo Simulador Demo', true);
-    } else {
-      updateStatus('Conectando Câmera...', false);
-      const success = await tracker.startCamera();
-      if (success) {
-        updateStatus('Câmera Ativa (Webcam)', true);
-      } else {
-        updateStatus('Falha na Câmera - Modo Demo', true);
-      }
-    }
-  });
-
-  btnDemoVideo.addEventListener('click', () => {
-    tracker.startDemoMode();
-    updateStatus('Modo Simulador Demo', true);
   });
 
   btnFullscreen.addEventListener('click', () => {

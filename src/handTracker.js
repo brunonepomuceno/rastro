@@ -1,7 +1,6 @@
 export class HandTracker {
-  constructor(videoElement, pipVideoElement, onResultsCallback) {
+  constructor(videoElement, onResultsCallback) {
     this.video = videoElement;
-    this.pipVideo = pipVideoElement;
     this.onResultsCallback = onResultsCallback;
     this.camera = null;
     this.hands = null;
@@ -43,10 +42,8 @@ export class HandTracker {
     this.isPaused = isPaused;
     if (isPaused) {
       if (this.video && this.video.pause) this.video.pause();
-      if (this.pipVideo && this.pipVideo.pause) this.pipVideo.pause();
     } else {
       if (this.video && this.video.play) this.video.play().catch(() => {});
-      if (this.pipVideo && this.pipVideo.play) this.pipVideo.play().catch(() => {});
     }
   }
 
@@ -59,10 +56,7 @@ export class HandTracker {
       });
 
       this.video.srcObject = stream;
-      this.pipVideo.srcObject = stream;
-
       await this.video.play();
-      await this.pipVideo.play();
 
       this.isCameraActive = true;
       this.isPaused = false;
@@ -97,7 +91,6 @@ export class HandTracker {
       const tracks = this.video.srcObject.getTracks();
       tracks.forEach(track => track.stop());
       this.video.srcObject = null;
-      this.pipVideo.srcObject = null;
     }
     this.isCameraActive = false;
   }

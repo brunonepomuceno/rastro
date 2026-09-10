@@ -63,30 +63,6 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.brand-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #ff3b70 0%, #aa26ff 100%);
-  border-radius: var(--radius-md);
-  color: white;
-}
-
-.project-title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.project-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
 }
 
 .badge {
@@ -215,40 +191,7 @@ body {
   z-index: 2;
 }
 
-/* Floating PIP Preview */
-.pip-preview {
-  position: absolute;
-  bottom: 24px;
-  left: 24px;
-  width: 180px;
-  height: 110px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-  background: #000;
-  z-index: 5;
-}
 
-.pip-preview video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
-
-.pip-badge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  padding: 2px 6px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
-}
 
 /* Gesture Hint Overlay */
 .gesture-hint {
