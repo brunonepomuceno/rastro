@@ -1,6 +1,6 @@
-# rastro
+# MagicTracked
 
-Rastro é uma aplicação web interativa para processamento visual e renderização de efeitos refrativos em tempo real. O sistema utiliza a câmera do dispositivo para rastrear os movimentos das mãos e aplicar shaders customizados em malhas 3D e filtros de pós-processamento.
+MagicTracked é uma aplicação web interativa para processamento visual e renderização de efeitos refrativos em tempo real. O sistema utiliza a câmera do dispositivo para rastrear os movimentos das mãos e aplicar shaders customizados em malhas 3D e filtros de pós-processamento.
 
 ## Funcionalidades
 
@@ -28,8 +28,8 @@ Rastro é uma aplicação web interativa para processamento visual e renderizaç
 
 1. Clone o repositório e acesse o diretório do projeto:
    ```bash
-   git clone https://github.com/brunonepomuceno/rastro.git
-   cd rastro
+   git clone https://github.com/brunonepomuceno/magic-tracked.git
+   cd magic-tracked
    ```
 
 2. Instale as dependências:
@@ -56,7 +56,7 @@ Rastro é uma aplicação web interativa para processamento visual e renderizaç
 ## Estrutura do Projeto
 
 ```
-rastro/
+magic-tracked/
 ├── index.html          # Estrutura DOM da interface
 ├── package.json        # Dependências e scripts de build
 ├── vite.config.js      # Configuração do Vite
