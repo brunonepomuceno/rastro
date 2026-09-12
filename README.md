@@ -1,10 +1,10 @@
 # MagicTracked
 
-MagicTracked é uma aplicação web interativa para processamento visual e renderização de efeitos refrativos em tempo real. O sistema utiliza a câmera do dispositivo para rastrear os movimentos das mãos e aplicar shaders customizados em malhas 3D e filtros de pós-processamento.
+MagicTracked é uma aplicação web interativa para processamento visual e renderização de efeitos refrativos em tempo real. O sistema utiliza a câmera do dispositivo (ou modo simulador demo) para rastrear os movimentos das mãos e aplicar shaders customizados em malhas 3D e filtros de pós-processamento, além de permitir gravação e exportação em GIF e MP4.
 
 ## Funcionalidades
 
-- **Rastreamento de Mãos (MediaPipe Hands):** Mapeamento de 21 pontos de articulação por mão com baixa latência.
+- **Rastreamento de Mãos (MediaPipe Hands):** Mapeamento de 21 pontos de articulação por mão com baixa latência e modo simulador (demo) automático.
 - **Efeitos de Shaders (WebGL via Three.js):**
   - **Motion Veil:** Malha 3D conectada entre os dedos com reflexão, refração óptica e dispersão cromática (RGB shift).
   - **Liquid Ripple:** Distorções ondulatórias de fluido sobre o feed de vídeo.
@@ -13,16 +13,20 @@ MagicTracked é uma aplicação web interativa para processamento visual e rende
   - **ASCII Art:** Renderização procedimental em matriz de caracteres.
   - **Glitch Effect:** Aberração cromática com linhas de varredura e ruído.
   - **Effect Circle:** Sistema de instanciamento em GPU para anéis de efeito entre os pontos das mãos.
-- **Controles em Tempo Real:**
-  - Painel lateral para ajuste de parâmetros (opacidade, dispersão RGB, nível de iridescência, espessura do esqueleto).
+- **Gravação de Tela & Exportação (GIF / MP4):**
+  - Gravação ao vivo da tela interativa diretamente na interface.
+  - Painel lateral de exportação com suporte a formatos **GIF** e **MP4 (H.264)** compatível com QuickTime Player e reprodutores nativos.
+  - Controles de velocidade (0.5x, 1x, 1.5x, 2x), taxa de quadros (10, 15, 20, 24 FPS) e resolução (Auto, 100%, 50%).
+  - Estimativa de tamanho de arquivo e barra de progresso em tempo real.
+- **Controles & UI:**
+  - Botões de ação no cabeçalho (`Painel`, `Gravar tela`, `Fullscreen`).
+  - Painéis laterais colapsáveis e mutuamente exclusivos para edição e exportação.
   - Seleção de presets visuais (Brik Original, Liquid Glass, Neon Prism, Rainbow Silk).
-  - Exportação de capturas de tela (PNG) em alta resolução.
-  - Alternância de exibição em tela cheia (Fullscreen).
 
 ## Requisitos
 
 - Node.js (versão 18 ou superior)
-- Navegador web moderno com suporte a WebGL e acesso à webcam.
+- Navegador web moderno com suporte a WebGL e WebCodecs.
 
 ## Instalação e Execução
 
@@ -44,29 +48,32 @@ MagicTracked é uma aplicação web interativa para processamento visual e rende
 
 4. Acesse o endereço exibido no terminal (geralmente `http://localhost:5173`).
 
-## Como Usar
+## Testes Automatizados
 
-1. Ao abrir a aplicação, autorize o acesso à câmera.
-2. Posicione uma ou ambas as mãos em frente à câmera.
-3. Utilize o botão **Painel** no canto superior direito para abrir as configurações.
-4. Alterne entre os shaders de efeito no menu **Effect Shader**.
-5. Ajuste a cor e a espessura do esqueleto de rastreamento conforme desejado.
-6. Clique no botão **Exportar** para capturar e baixar a imagem renderizada.
+O projeto conta com suítes de testes unitários, de integração e regressivos:
+
+```bash
+npm test
+```
+
+Consulte o arquivo [`TESTING.md`](file:///Users/bl4k.code/Developer/cam/TESTING.md) para obter mais detalhes sobre as regras e execução de testes.
 
 ## Estrutura do Projeto
 
 ```
 magic-tracked/
-├── index.html          # Estrutura DOM da interface
-├── package.json        # Dependências e scripts de build
-├── vite.config.js      # Configuração do Vite
+├── index.html          # Estrutura DOM da interface e sidebars
+├── package.json        # Dependências (three, gifenc, mp4-muxer) e scripts
+├── TESTING.md          # Instruções e regras dos testes
+├── tests/              # Suítes de testes unitários, integração e regressivos
 └── src/
-    ├── main.js         # Eventos de UI e inicialização da aplicação
-    ├── handTracker.js  # Integração com MediaPipe Hands e simulação demo
-    ├── renderer.js     # Cena Three.js, malha 3D e renderização do esqueleto
-    ├── meshBuilder.js  # Construção da geometria customizada da malha
-    ├── shaders.js      # GLSL Vertex e Fragment Shaders
-    └── style.css       # Estilo visual da interface
+    ├── main.js         # Inicialização e manipulação da UI
+    ├── exporter.js     # Engine de exportação (GIF via gifenc e MP4 via mp4-muxer + WebCodecs)
+    ├── handTracker.js  # Integração MediaPipe Hands e modo simulador
+    ├── renderer.js     # Cena Three.js, malha 3D e overlay de esqueleto
+    ├── meshBuilder.js  # Geometria da malha 3D
+    ├── shaders.js      # Vertex e Fragment Shaders
+    └── style.css       # Design da interface e painéis laterais
 ```
 
 ## Compilação para Produção
@@ -77,8 +84,9 @@ Para gerar os arquivos estáticos otimizados para produção:
 npm run build
 ```
 
-Os arquivos compilados serão gerados na pasta `dist/` e podem ser hospedados em qualquer servidor web estático.
+Os arquivos compilados serão gerados na pasta `dist/`.
 
 ## Licença
 
 MIT
+

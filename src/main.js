@@ -1,5 +1,6 @@
 import { AppRenderer } from './renderer.js';
 import { HandTracker } from './handTracker.js';
+import { CanvasExporter } from './exporter.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // DOM Elements
@@ -11,10 +12,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const gestureHint = document.getElementById('gestureHint');
   const controlsSidebar = document.getElementById('controlsSidebar');
 
+  // Export Sidebar DOM
+  const exportSidebar = document.getElementById('exportSidebar');
+  const btnCloseExportSidebar = document.getElementById('btnCloseExportSidebar');
+  const exportFormatGif = document.getElementById('exportFormatGif');
+  const exportFormatMp4 = document.getElementById('exportFormatMp4');
+  const speedBtns = document.querySelectorAll('#speedControlGroup .segment-btn');
+  const fpsBtns = document.querySelectorAll('#fpsControlGroup .segment-btn');
+  const resBtns = document.querySelectorAll('#resControlGroup .segment-btn');
+  const exportEstimativeDetails = document.getElementById('exportEstimativeDetails');
+  const btnDownloadExport = document.getElementById('btnDownloadExport');
+  const exportBtnText = document.getElementById('exportBtnText');
+  const exportProgressBarWrap = document.getElementById('exportProgressBarWrap');
+  const exportProgressBar = document.getElementById('exportProgressBar');
+
   // Controls DOM
   const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+  const btnRecordScreen = document.getElementById('btnRecordScreen');
+  const recBtnText = document.getElementById('recBtnText');
   const btnFullscreen = document.getElementById('btnFullscreen');
-  const btnSnapshot = document.getElementById('btnSnapshot');
   const btnPause = document.getElementById('btnPause');
   const btnPlay = document.getElementById('btnPlay');
   const btnReset = document.getElementById('btnReset');
@@ -51,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize Renderer
   const appRenderer = new AppRenderer(threeCanvas, skeletonCanvas, webcam);
+  const canvasExporter = new CanvasExporter(threeCanvas, skeletonCanvas, appRenderer);
 
   // Initialize Hand Tracker
   const tracker = new HandTracker(webcam, (results) => {
@@ -65,6 +82,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render Loop
   const loop = () => {
     appRenderer.render();
+    if (canvasExporter && canvasExporter.isLiveRecording) {
+      canvasExporter.captureLiveFrame();
+    }
     requestAnimationFrame(loop);
   };
   loop();
@@ -89,7 +109,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- UI Event Handlers ---
   btnToggleSidebar.addEventListener('click', () => {
+    const willOpen = controlsSidebar.classList.contains('collapsed');
     controlsSidebar.classList.toggle('collapsed');
+    if (willOpen) {
+      exportSidebar.classList.add('collapsed');
+    }
   });
 
   btnFullscreen.addEventListener('click', () => {
@@ -301,20 +325,142 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyPreset('brik');
   });
 
-  // Snapshot Capture
-  btnSnapshot.addEventListener('click', () => {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = threeCanvas.width;
-    tempCanvas.height = threeCanvas.height;
-    const ctx = tempCanvas.getContext('2d');
+  // --- Export Sidebar Logic ---
+  let selectedFormat = 'gif';
+  let selectedSpeed = '1';
+  let selectedFps = '15';
+  let selectedRes = 'auto';
 
-    ctx.drawImage(threeCanvas, 0, 0);
-    ctx.drawImage(skeletonCanvas, 0, 0);
+  function updateExportEstimation() {
+    const config = canvasExporter.getConfig(selectedFormat, selectedSpeed, selectedFps, selectedRes);
+    exportEstimativeDetails.textContent = `${config.width}×${config.height}px · ${config.frameCount} quadros · ~${config.sizeMb} MB`;
+    exportBtnText.textContent = `Baixar ${selectedFormat.toUpperCase()}`;
+  }
 
-    const dataUrl = tempCanvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `iridescent-veil-snapshot-${Date.now()}.png`;
-    a.click();
+  // --- Record Screen Logic ---
+  let isRecording = false;
+  let recInterval = null;
+  let recSeconds = 0;
+
+  btnRecordScreen.addEventListener('click', async () => {
+    isRecording = !isRecording;
+
+    if (isRecording) {
+      recSeconds = 0;
+      btnRecordScreen.classList.add('recording');
+      recBtnText.textContent = 'Parar (00:00)';
+      canvasExporter.startLiveRecording();
+
+      // Close both sidebars while user is recording live screen
+      controlsSidebar.classList.add('collapsed');
+      exportSidebar.classList.add('collapsed');
+
+      recInterval = setInterval(() => {
+        recSeconds++;
+        const mins = String(Math.floor(recSeconds / 60)).padStart(2, '0');
+        const secs = String(recSeconds % 60).padStart(2, '0');
+        recBtnText.textContent = `Parar (${mins}:${secs})`;
+      }, 1000);
+    } else {
+      clearInterval(recInterval);
+      recInterval = null;
+      btnRecordScreen.classList.remove('recording');
+      recBtnText.textContent = 'Gravar tela';
+
+      await canvasExporter.stopLiveRecording();
+
+      // Open Export Sidebar immediately upon stopping recording & close controls sidebar
+      controlsSidebar.classList.add('collapsed');
+      exportSidebar.classList.remove('collapsed');
+      updateExportEstimation();
+    }
   });
+
+  // Close Export Sidebar
+  btnCloseExportSidebar.addEventListener('click', () => {
+    exportSidebar.classList.add('collapsed');
+  });
+
+  // Format Switchers
+  exportFormatGif.addEventListener('click', () => {
+    selectedFormat = 'gif';
+    exportFormatGif.classList.add('active');
+    exportFormatMp4.classList.remove('active');
+    updateExportEstimation();
+  });
+
+  exportFormatMp4.addEventListener('click', () => {
+    selectedFormat = 'mp4';
+    exportFormatMp4.classList.add('active');
+    exportFormatGif.classList.remove('active');
+    updateExportEstimation();
+  });
+
+  // Speed Control
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      speedBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedSpeed = btn.dataset.speed;
+      updateExportEstimation();
+    });
+  });
+
+  // FPS Control
+  fpsBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      fpsBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedFps = btn.dataset.fps;
+      updateExportEstimation();
+    });
+  });
+
+  // Resolution Control
+  resBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      resBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedRes = btn.dataset.res;
+      updateExportEstimation();
+    });
+  });
+
+  // Download Action
+  btnDownloadExport.addEventListener('click', async () => {
+    btnDownloadExport.disabled = true;
+    exportProgressBarWrap.style.display = 'block';
+    exportProgressBar.style.width = '0%';
+
+    const formatUpper = selectedFormat.toUpperCase();
+    exportBtnText.textContent = `Gerando ${formatUpper}... 0%`;
+
+    try {
+      await canvasExporter.export(
+        selectedFormat,
+        selectedSpeed,
+        selectedFps,
+        selectedRes,
+        (progress) => {
+          const percent = Math.round(progress * 100);
+          exportProgressBar.style.width = `${percent}%`;
+          exportBtnText.textContent = `Gerando ${formatUpper}... ${percent}%`;
+        }
+      );
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar o arquivo. Tente novamente.');
+    } finally {
+      btnDownloadExport.disabled = false;
+      exportBtnText.textContent = `Baixar ${formatUpper}`;
+      setTimeout(() => {
+        exportProgressBarWrap.style.display = 'none';
+        exportProgressBar.style.width = '0%';
+      }, 1000);
+    }
+  });
+
+  // Initial estimate calculation
+  updateExportEstimation();
 });
+
